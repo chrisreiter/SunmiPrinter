@@ -1,5 +1,6 @@
 
-SunmiPOSLib/bin/Debug/net8.0-android/SunmiPOSLib.dll
+*.dll
+*.pdb
 /SunmiPOSLib/bin
 /SunmiPOSLib/obj
 /SunmiSampleApp/bin

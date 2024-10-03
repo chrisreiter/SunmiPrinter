@@ -80,7 +80,7 @@ public partial class TextPage : ContentPage
         }
         catch (Exception exception)
         {
-            await DisplayAlert("Erro", exception.Message, "ok");
+            await DisplayAlert("Error", exception.Message, "ok");
         }
     }
 }

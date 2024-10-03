@@ -42,18 +42,23 @@ public class PrinterConnection : IPrinterConnection
     {
         try
         {
-            var intent = new Intent();
+            Intent intent = new Intent();
             intent.SetPackage("woyou.aidlservice.jiuiv5");
             intent.SetAction("woyou.aidlservice.jiuiv5.IWoyouService");
-            Android.App.Application.Context.StartService(intent);
-            Android.App.Application.Context.BindService(intent, SunmiPrinterService, Bind.AutoCreate);
-            return true;
+
+            bool isBound = Android.App.Application.Context.BindService(intent, SunmiPrinterService, Bind.AutoCreate);
+            Console.WriteLine("Service binding result: " + isBound);
+
+            return isBound;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine($"Exception during service binding: {ex.Message}");
             return false;
         }
     }
+
+
 
     public bool CloseConnection()
     {
@@ -118,7 +123,7 @@ public class PrinterConnection : IPrinterConnection
             LineWrap();
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             throw new PrintTextException();
         }
@@ -357,15 +362,19 @@ public class PrinterConnection : IPrinterConnection
 public class SunmiPrinterService : Java.Lang.Object, IServiceConnection
 {
     public IWoyouService Service { get; set; }
+
     public void OnServiceConnected(ComponentName name, IBinder service)
     {
+        Console.WriteLine("Service connected.");
         Service = IWoyouServiceStub.AsInterface(service);
     }
 
     public void OnServiceDisconnected(ComponentName name)
     {
+        Console.WriteLine("Service disconnected.");
         Service = null;
     }
+
 }
 
 class Callback : ICallbackStub

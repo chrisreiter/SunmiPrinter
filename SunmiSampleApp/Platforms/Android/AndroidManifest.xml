@@ -1,6 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"></application>
+
+	<!-- Queries should be outside of the application -->
+	<queries>
+		<package android:name="woyou.aidlservice.jiuiv5" />
+	</queries>
+
+	<!-- Permissions -->
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.BIND_PRINT_SERVICE" />
+	<uses-permission android:name="com.sunmi.peripheral.printer.SERVICE" />
+
+	<application
+        android:allowBackup="true"
+        android:icon="@mipmap/appicon"
+        android:roundIcon="@mipmap/appicon_round"
+        android:supportsRtl="true">
+
+		<!-- Printer service declaration inside the application tag -->
+		<service android:name="com.sunmi.printerservice.PrinterService"
+                 android:exported="true"
+                 android:permission="com.sunmi.peripheral.printer.SERVICE">
+			<intent-filter>
+				<action android:name="com.sunmi.printer.ACTION_BIND" />
+			</intent-filter>
+		</service>
+
+	</application>
 </manifest>
