@@ -137,6 +137,32 @@ public class PrinterConnection : IPrinterConnection
         {
             var context = Application.Context;
 
+            var printerVersion = SunmiPrinterService.Service.GetPrinterVersion();
+            var test1 = SunmiPrinterService.Service.GetPrinterSerialNo();
+            var test2 = SunmiPrinterService.Service.GetServiceVersion();
+            var test3 = SunmiPrinterService.Service.GetFirmwareStatus();
+
+            // Start buffered mode
+            SunmiPrinterService.Service.EnterPrinterBuffer(true);
+
+
+            //SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
+            //SunmiPrinterService.Service.PrintText("Imagem\n", null);
+            SunmiPrinterService.Service.PrintText(printerVersion + "\n", null);
+            SunmiPrinterService.Service.PrintText("--------------------------------\n", new SimpleCallback());
+
+            // Use the SimpleCallback class as the ICallback implementation
+            SunmiPrinterService.Service.PrintBitmap(CreateTestBitmap(), new SimpleCallback());
+
+            SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
+            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
+            SunmiPrinterService.Service.CommitPrinterBuffer();
+            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
+            SunmiPrinterService.Service.CommitPrinterBuffer();
+
+
+            SunmiPrinterService.Service.ExitPrinterBuffer(true);
+
             // Retrieve the resource ID for the image
             var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
             if (resourceId == 0)
@@ -157,8 +183,9 @@ public class PrinterConnection : IPrinterConnection
             using var grayscaleBitmap = ConvertToGrayscaleAndScale(drawable.Bitmap, 384);
 
             // Set alignment and print the Bitmap
-            SunmiPrinterService.Service.SetAlignment((int)image.Alignment, new SimpleCallback());
-            SunmiPrinterService.Service.PrintBitmapCustom(grayscaleBitmap, 2, new SimpleCallback());
+            SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
+            SunmiPrinterService.Service.PrintBitmapCustom(grayscaleBitmap, 2, null);
+            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
 
             // Optionally cut the paper if specified
             if (image.CutPaper) SendRawData(CommandUtils.CutPaper());
@@ -370,20 +397,23 @@ public class PrinterConnection : IPrinterConnection
 
     public Bitmap CreateTestBitmap()
     {
-        // Define bitmap size and color
         int width = 384;
         int height = 200;
-        Android.Graphics.Color grayColor = Android.Graphics.Color.Rgb(128, 128, 128); // Medium gray color
 
-        // Create a blank bitmap with the specified width, height, and configuration
+        // Create a blank bitmap with the specified width and height
         Bitmap bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
 
-        // Set each pixel to the gray color
+        // Draw a gradient from white to black
         for (int y = 0; y < height; y++)
         {
+            // Calculate the shade of gray based on the row position
+            int grayLevel = (int)(255 * (1 - (float)y / height)); // Gradient effect
+            Android.Graphics.Color color = Android.Graphics.Color.Argb(255, grayLevel, grayLevel, grayLevel);
+
+            // Set each pixel in the row to the calculated shade of gray
             for (int x = 0; x < width; x++)
             {
-                bitmap.SetPixel(x, y, grayColor);
+                bitmap.SetPixel(x, y, color);
             }
         }
 
