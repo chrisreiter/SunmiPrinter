@@ -6,7 +6,6 @@
 package woyou.aidlservice.jiuiv5;
 
 import woyou.aidlservice.jiuiv5.ICallback;
-import woyou.aidlservice.jiuiv5.IYmodemSPI;
 import android.graphics.Bitmap;
 
 interface IWoyouService
@@ -18,7 +17,7 @@ interface IWoyouService
 	* @param filename
 	* @param iapInterface
 	*/	
-	void updateFirmware(in byte[] buffer, long size, String filename, in IYmodemSPI iapInterface);
+	void updateFirmware();
 	
 	/**
 	* 打印机固件状态
@@ -107,8 +106,6 @@ interface IWoyouService
 	* 打印文字，文字宽度满一行自动换行排版，不满一整行不打印除非强制换行
 	* @param text:	要打印的文字字符串
 	*/
-
-
 	void printText(String text, in ICallback callback);
 
 	/**
@@ -128,15 +125,13 @@ interface IWoyouService
 	*/
 	void printColumnsText(in String[] colsTextArr, in int[] colsWidthArr, in int[] colsAlign, in ICallback callback);
 
-	int updatePrinterState();
 	
 	/**
 	* 打印图片
 	* @param bitmap: 	图片bitmap对象(最大宽度384像素，超过无法打印并且回调callback异常函数)
 	*/
 	void printBitmap(in Bitmap bitmap, in ICallback callback);
-	// we have to remove Bitmap parameter but keep the function define.
-	// void printBitmap(in ICallback callback);
+	void printBitmapCustom(in Bitmap bitmap, in int type, in ICallback callback);
 	
 	/**
 	* 打印一维条码
@@ -168,12 +163,34 @@ interface IWoyouService
 	*                3 -- 纠错级别H (30%) 
 	*/
 	void printQRCode(String data, int modulesize, int errorlevel, in ICallback callback);
-	
+	int updatePrinterState();
 	/**
 	* 打印文字，文字宽度满一行自动换行排版，不满一整行不打印除非强制换行
 	* 文字按矢量文字宽度原样输出，即每个字符不等宽
 	* @param text:	要打印的文字字符串
-	* Ver 1.7.6中增加
+	* 
 	*/
 	void printOriginalText(String text, in ICallback callback);	
+	
+	/**
+	* 打印缓冲区内容
+	*/
+	void commitPrinterBuffer();
+	
+	/**
+	* 进入缓冲模式，所有打印调用将缓存，调用commitPrinterBuffe()后打印
+	* 
+	* @param clean: 是否清除缓冲区内容
+	* 
+	*/
+	void enterPrinterBuffer(in boolean clean);
+	
+	/**
+	* 退出缓冲模式
+	* 
+	* @param commit: 是否打印出缓冲区内容
+	* 
+	*/
+	void exitPrinterBuffer(in boolean commit);
+	
 }
