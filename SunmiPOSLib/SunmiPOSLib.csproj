@@ -46,6 +46,14 @@
 		<RepositoryType>git</RepositoryType>
 	</PropertyGroup>
 	<ItemGroup>
+	  <AndroidResource Remove="FakesAssemblies\**" />
+	  <Compile Remove="FakesAssemblies\**" />
+	  <EmbeddedResource Remove="FakesAssemblies\**" />
+	  <MauiCss Remove="FakesAssemblies\**" />
+	  <MauiXaml Remove="FakesAssemblies\**" />
+	  <None Remove="FakesAssemblies\**" />
+	</ItemGroup>
+	<ItemGroup>
         <None Include="License.md">
             <Pack>true</Pack>
             <PackagePath></PackagePath>
@@ -71,5 +79,11 @@
 		<AndroidInterfaceDescription Include="Platforms\Android\IWoyouService.aidl" />
 		<AndroidInterfaceDescription Include="Platforms\Android\ICallback.aidl" />
 		<AndroidInterfaceDescription Include="Platforms\Android\Bitmap.aidl" />
+	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.QualityTools.Testing.Fakes" Version="16.11.230815" />
+	</ItemGroup>
+	<ItemGroup>
+	  <AdditionalDesignTimeBuildInput Remove="FakesAssemblies\**" />
 	</ItemGroup>
 </Project>

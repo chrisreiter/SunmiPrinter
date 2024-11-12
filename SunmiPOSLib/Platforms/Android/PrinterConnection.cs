@@ -109,6 +109,27 @@ public class PrinterConnection : IPrinterConnection
         }
     }
 
+    public bool PrintBitmap(Image image)
+    {
+        if (!IsConnected()) throw new PrinterConnectionException();
+        try
+        {
+            //SunmiPrinterService.Service.SetFontSize(16, null);
+
+            //SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
+
+            //image.
+
+            //SendRawData(CommandUtils.GetQrcodeBytes(image));
+            LineWrap();
+            return true;
+        }
+        catch (Exception)
+        {
+            throw new PrintImageException();
+        }
+    }    
+
     public bool PrintText(Text text)
     {
 
@@ -137,31 +158,29 @@ public class PrinterConnection : IPrinterConnection
         {
             var context = Application.Context;
 
+            SunmiPrinterService.Service.PrintText("Hello Sunmi world!" + "\n", null);
+            SunmiPrinterService.Service.PrintText("--------------------------------\n", new SimpleCallback());
+
+            SunmiPrinterService.Service.PrintTextWithFont("Hello Sunmi world!", "fonts/OpenSans-Semibold.ttf", 12, null);
+
+
+            //PrintBarcode(new Barcode("21705070507", 2, 6, 70, false));
+            //PrintQRCode(new QRcode("Hello Sunmi world!"));
+
+            //var table = new Table(new string[] { "Name1", "Value" }, new int[] { 20, 20 }, new AlignmentEnum[] { AlignmentEnum.LEFT, AlignmentEnum.RIGHT });
+            //PrintTable(table);
+            //table = new Table(new string[] { "Name2", "Value" }, new int[] { 20, 20 }, new AlignmentEnum[] { AlignmentEnum.LEFT, AlignmentEnum.RIGHT });
+            //PrintTable(table);
+            //table = new Table(new string[] { "Name3", "Value333" }, new int[] { 20, 20 }, new AlignmentEnum[] { AlignmentEnum.LEFT, AlignmentEnum.RIGHT });
+            //PrintTable(table);
+
+
+
             var printerVersion = SunmiPrinterService.Service.GetPrinterVersion();
             var test1 = SunmiPrinterService.Service.GetPrinterSerialNo();
             var test2 = SunmiPrinterService.Service.GetServiceVersion();
             var test3 = SunmiPrinterService.Service.GetFirmwareStatus();
 
-            // Start buffered mode
-            SunmiPrinterService.Service.EnterPrinterBuffer(true);
-
-
-            //SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
-            //SunmiPrinterService.Service.PrintText("Imagem\n", null);
-            SunmiPrinterService.Service.PrintText(printerVersion + "\n", null);
-            SunmiPrinterService.Service.PrintText("--------------------------------\n", new SimpleCallback());
-
-            // Use the SimpleCallback class as the ICallback implementation
-            SunmiPrinterService.Service.PrintBitmap(CreateTestBitmap(), new SimpleCallback());
-
-            SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
-            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
-            SunmiPrinterService.Service.CommitPrinterBuffer();
-            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
-            SunmiPrinterService.Service.CommitPrinterBuffer();
-
-
-            SunmiPrinterService.Service.ExitPrinterBuffer(true);
 
             // Retrieve the resource ID for the image
             var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
@@ -170,7 +189,6 @@ public class PrinterConnection : IPrinterConnection
                 Console.WriteLine($"Image resource '{image.Resource}' not found.");
                 return false;
             }
-
             // Load the drawable and convert to Bitmap
             using var drawable = context.GetDrawable(resourceId) as BitmapDrawable;
             if (drawable == null || drawable.Bitmap == null)
@@ -178,14 +196,51 @@ public class PrinterConnection : IPrinterConnection
                 Console.WriteLine("Failed to load drawable or bitmap is null.");
                 return false;
             }
+            var scaledBitmap = ConvertToBlackAndWhite(drawable.Bitmap);
 
-            // Convert and scale the Bitmap to fit the printer's maximum width
-            using var grayscaleBitmap = ConvertToGrayscaleAndScale(drawable.Bitmap, 384);
+            // Start buffered mode
+            SunmiPrinterService.Service.EnterPrinterBuffer(true);
 
-            // Set alignment and print the Bitmap
-            SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
-            SunmiPrinterService.Service.PrintBitmapCustom(grayscaleBitmap, 2, null);
-            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
+
+            // Use the SimpleCallback class as the ICallback implementation
+            var bmp1 = CreateSmileyBitmap();
+            SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
+            SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
+            SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
+            SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
+            SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
+            SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 1, null);
+            //SunmiPrinterService.Service.CommitPrinterBuffer();
+            SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
+            //SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
+            //SunmiPrinterService.Service.CommitPrinterBuffer();
+
+
+            SunmiPrinterService.Service.ExitPrinterBuffer(true);
+
+            //// Retrieve the resource ID for the image
+            //var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
+            //if (resourceId == 0)
+            //{
+            //    Console.WriteLine($"Image resource '{image.Resource}' not found.");
+            //    return false;
+            //}
+
+            //// Load the drawable and convert to Bitmap
+            //using var drawable = context.GetDrawable(resourceId) as BitmapDrawable;
+            //if (drawable == null || drawable.Bitmap == null)
+            //{
+            //    Console.WriteLine("Failed to load drawable or bitmap is null.");
+            //    return false;
+            //}
+
+            //// Convert and scale the Bitmap to fit the printer's maximum width
+            //using var grayscaleBitmap = ConvertToGrayscaleAndScale(drawable.Bitmap, 384);
+
+            //// Set alignment and print the Bitmap
+            //SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
+            //SunmiPrinterService.Service.PrintBitmapCustom(grayscaleBitmap, 2, null);
+            //SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
 
             // Optionally cut the paper if specified
             if (image.CutPaper) SendRawData(CommandUtils.CutPaper());
@@ -395,30 +450,205 @@ public class PrinterConnection : IPrinterConnection
     }
 
 
-    public Bitmap CreateTestBitmap()
+    public Bitmap CreateTestBitmap_()
     {
-        int width = 384;
-        int height = 200;
+        // Set dimensions for the test bitmap
+        int width = 384; // Adjust width based on your printer's requirements
+        int height = 384; // Adjust height as needed for a square grid of tiles
 
         // Create a blank bitmap with the specified width and height
         Bitmap bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
 
-        // Draw a gradient from white to black
-        for (int y = 0; y < height; y++)
-        {
-            // Calculate the shade of gray based on the row position
-            int grayLevel = (int)(255 * (1 - (float)y / height)); // Gradient effect
-            Android.Graphics.Color color = Android.Graphics.Color.Argb(255, grayLevel, grayLevel, grayLevel);
+        // Set up a canvas to draw on the bitmap
+        Canvas canvas = new Canvas(bitmap);
 
-            // Set each pixel in the row to the calculated shade of gray
-            for (int x = 0; x < width; x++)
+        // Define the number of tiles in both directions
+        int numberOfTiles = 16; // Number of tiles per row and column
+        int tileSize = width / numberOfTiles; // Size of each tile
+
+        // Paint for drawing
+        Android.Graphics.Paint paint = new Android.Graphics.Paint();
+
+        // Loop through each tile and draw black and white tiles alternately
+        for (int row = 0; row < numberOfTiles; row++)
+        {
+            for (int col = 0; col < numberOfTiles; col++)
             {
-                bitmap.SetPixel(x, y, color);
+                // Set the color: black for even sum of row and col, white for odd
+                if ((row + col) % 2 == 0)
+                {
+                    paint.Color = Android.Graphics.Color.Black;
+                }
+                else
+                {
+                    paint.Color = Android.Graphics.Color.White;
+                }
+
+                // Draw the tile
+                float left = col * tileSize;
+                float top = row * tileSize;
+                float right = left + tileSize;
+                float bottom = top + tileSize;
+
+                canvas.DrawRect(left, top, right, bottom, paint);
             }
         }
 
         return bitmap;
     }
+
+    public Bitmap CreateTestBitmap()
+    {
+
+        // Set dimensions for the test bitmap
+        int width = 384; // Adjust width based on your printer's requirements
+        int height = 384; // Adjust height as needed for a square grid of tiles
+
+        // Create a blank bitmap with the specified width and height
+        Bitmap bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
+
+        // Set up a canvas to draw on the bitmap
+        Canvas canvas = new Canvas(bitmap);
+
+        // Define the number of tiles in both directions
+        int numberOfTiles = 16; // Number of tiles per row and column
+        int tileSize = width / numberOfTiles; // Size of each tile
+
+        // Paint for drawing
+        Android.Graphics.Paint paint = new Android.Graphics.Paint();
+
+        // Define the number of gray shades to use
+        int numberOfGrayShades = 4; // Adjust as needed for more/less gradient steps
+
+        // Loop through each tile and draw black, white, or gray tiles
+        for (int row = 0; row < numberOfTiles; row++)
+        {
+            for (int col = 0; col < numberOfTiles; col++)
+            {
+                // Calculate the color based on the row and column
+                if ((row + col) % 2 == 0)
+                {
+                    paint.Color = Android.Graphics.Color.Black; // Black tiles for even sum
+                }
+                else
+                {
+                    // Determine which shade of gray to use based on the row
+                    int grayIndex = (row / (numberOfTiles / numberOfGrayShades)) % numberOfGrayShades;
+                    int grayValue = (255 / (numberOfGrayShades - 1)) * grayIndex;
+                    paint.Color = Android.Graphics.Color.Rgb(grayValue, grayValue, grayValue);
+                }
+
+                // Draw the tile
+                float left = col * tileSize;
+                float top = row * tileSize;
+                float right = left + tileSize;
+                float bottom = top + tileSize;
+
+                canvas.DrawRect(left, top, right, bottom, paint);
+            }
+        }
+
+        return bitmap;
+    }
+
+    public Bitmap CreateSmileyBitmap()
+    {
+        // Set the dimensions for the bitmap
+        int width = 384; // Width suitable for thermal printers
+        int height = 384; // Height suitable for a square canvas
+
+        // Create a blank bitmap with the specified width and height
+        Bitmap smileyBitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
+
+        // Set up a canvas to draw on the bitmap
+        Canvas canvas = new Canvas(smileyBitmap);
+
+        // Create paint for drawing
+        Android.Graphics.Paint paint = new Android.Graphics.Paint();
+        paint.Color = Android.Graphics.Color.White; // Set background to white
+        paint.SetStyle(Android.Graphics.Paint.Style.Fill);
+
+        // Fill the background with white
+        canvas.DrawRect(0, 0, width, height, paint);
+
+        // Draw the face circle with white fill
+        float centerX = width / 2;
+        float centerY = height / 2;
+        float faceRadius = width / 3;
+        paint.Color = Android.Graphics.Color.White;
+        paint.SetStyle(Android.Graphics.Paint.Style.Fill);
+        canvas.DrawCircle(centerX, centerY, faceRadius, paint);
+
+        // Draw the black border around the face circle
+        paint.Color = Android.Graphics.Color.Black;
+        paint.SetStyle(Android.Graphics.Paint.Style.Stroke);
+        paint.StrokeWidth = 5; // Set stroke width for the border
+        canvas.DrawCircle(centerX, centerY, faceRadius, paint);
+
+        // Draw the eyes
+        paint.SetStyle(Android.Graphics.Paint.Style.Fill); // Use fill for the eyes
+        float eyeRadius = faceRadius / 10;
+        float eyeOffsetX = faceRadius / 3;
+        float eyeOffsetY = faceRadius / 3;
+        canvas.DrawCircle(centerX - eyeOffsetX, centerY - eyeOffsetY, eyeRadius, paint);
+        canvas.DrawCircle(centerX + eyeOffsetX, centerY - eyeOffsetY, eyeRadius, paint);
+
+        // Draw the smile
+        paint.SetStyle(Android.Graphics.Paint.Style.Stroke); // Use stroke for the smile
+        float smileRadius = faceRadius / 1.5f;
+        Android.Graphics.RectF smileRect = new Android.Graphics.RectF(centerX - smileRadius, centerY - smileRadius / 2, centerX + smileRadius, centerY + smileRadius / 2);
+        canvas.DrawArc(smileRect, 20, 140, false, paint); // Adjusted angles for a clearer smile
+
+        return smileyBitmap;
+    }
+
+
+    public Bitmap ConvertToBlackAndWhite(Bitmap inputBitmap)
+    {
+        // Set the target width for the thermal printer
+        int targetWidth = 384;
+        int originalWidth = inputBitmap.Width;
+        int originalHeight = inputBitmap.Height;
+
+        // Calculate the aspect ratio and the new height
+        float aspectRatio = (float)originalHeight / originalWidth;
+        int targetHeight = (int)(targetWidth * aspectRatio);
+
+        // Scale the input bitmap to the target width and height
+        Bitmap scaledBitmap = Bitmap.CreateScaledBitmap(inputBitmap, targetWidth, targetHeight, true);
+
+        // Create a new bitmap for the black-and-white image
+        Bitmap bwBitmap = Bitmap.CreateBitmap(targetWidth, targetHeight, Bitmap.Config.Argb8888);
+
+        // Iterate through each pixel and convert to black or white
+        for (int y = 0; y < targetHeight; y++)
+        {
+            for (int x = 0; x < targetWidth; x++)
+            {
+                // Get the pixel color from the scaled bitmap
+                int pixel = scaledBitmap.GetPixel(x, y);
+
+                // Convert the pixel to grayscale
+                int gray = (int)(0.3 * Android.Graphics.Color.GetRedComponent(pixel) +
+                                 0.59 * Android.Graphics.Color.GetGreenComponent(pixel) +
+                                 0.11 * Android.Graphics.Color.GetBlueComponent(pixel));
+
+                // Binarize the pixel based on a threshold value
+                int threshold = 128; // You can adjust this threshold value as needed
+                if (gray < threshold)
+                {
+                    bwBitmap.SetPixel(x, y, Android.Graphics.Color.Black);
+                }
+                else
+                {
+                    bwBitmap.SetPixel(x, y, Android.Graphics.Color.White);
+                }
+            }
+        }
+
+        return bwBitmap;
+    }
+
 
     public bool PrintTable(Table table)
     {
