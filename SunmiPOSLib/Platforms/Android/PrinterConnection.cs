@@ -196,24 +196,27 @@ public class PrinterConnection : IPrinterConnection
                 Console.WriteLine("Failed to load drawable or bitmap is null.");
                 return false;
             }
-            var scaledBitmap = ConvertToBlackAndWhite(drawable.Bitmap);
+            
+                //ConvertToPrintableBitmap(drawable.Bitmap);
 
             // Start buffered mode
             SunmiPrinterService.Service.EnterPrinterBuffer(true);
+            var scaledBitmap = DownloadAndConvertToBWBitmap(@"https://smartstore.com/media/6430/pagebuilder/Story-Home-Counter-git-400px-stroke-40.png?size=120");
 
 
             // Use the SimpleCallback class as the ICallback implementation
-            var bmp1 = CreateSmileyBitmap();
-            SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
-            SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
-            SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
-            SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
-            SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
+            //var bmp1 = CreateSmileyBitmap();
+            SunmiPrinterService.Service.PrintBitmap(scaledBitmap, new SimpleCallback());
             SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 1, null);
-            //SunmiPrinterService.Service.CommitPrinterBuffer();
-            SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
-            //SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
-            //SunmiPrinterService.Service.CommitPrinterBuffer();
+            
+            //SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
+            //SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 1, null);
+            //SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
+            //SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 1, null);
+            ////SunmiPrinterService.Service.CommitPrinterBuffer();
+            //SunmiPrinterService.Service.PrintBitmapCustom(bmp1, 1, null);
+            ////SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
+            ////SunmiPrinterService.Service.CommitPrinterBuffer();
 
 
             SunmiPrinterService.Service.ExitPrinterBuffer(true);
@@ -602,7 +605,6 @@ public class PrinterConnection : IPrinterConnection
         return smileyBitmap;
     }
 
-
     public Bitmap ConvertToBlackAndWhite(Bitmap inputBitmap)
     {
         // Set the target width for the thermal printer
@@ -649,6 +651,68 @@ public class PrinterConnection : IPrinterConnection
         return bwBitmap;
     }
 
+    public Bitmap ConvertToPrintableBitmap(Bitmap inputBitmap)
+    {
+        // Set the target width for the thermal printer
+        int targetWidth = 384;
+        int originalWidth = inputBitmap.Width;
+        int originalHeight = inputBitmap.Height;
+
+        // Calculate the aspect ratio and the new height
+        float aspectRatio = (float)originalHeight / originalWidth;
+        int targetHeight = (int)(targetWidth * aspectRatio);
+
+        // Scale the input bitmap to the target width and height
+        Bitmap scaledBitmap = Bitmap.CreateScaledBitmap(inputBitmap, targetWidth, targetHeight, true);
+
+        // Create a new bitmap for the black-and-white output
+        Bitmap bwBitmap = Bitmap.CreateBitmap(targetWidth, targetHeight, Bitmap.Config.Argb8888);
+
+        // Set up a simple dithering pattern (Floyd-Steinberg, for example)
+        int[,] ditherMatrix = { { 0, 0, 7 }, { 3, 5, 1 } };
+        int matrixHeight = ditherMatrix.GetLength(0);
+        int matrixWidth = ditherMatrix.GetLength(1);
+        int ditherFactor = 16;
+
+        // Iterate through each pixel and convert to black or white with simple dithering
+        for (int y = 0; y < targetHeight; y++)
+        {
+            for (int x = 0; x < targetWidth; x++)
+            {
+                // Get the pixel color from the scaled bitmap
+                int pixel = scaledBitmap.GetPixel(x, y);
+
+                // Convert the pixel to grayscale
+                int gray = (int)(0.3 * Android.Graphics.Color.GetRedComponent(pixel) +
+                                 0.59 * Android.Graphics.Color.GetGreenComponent(pixel) +
+                                 0.11 * Android.Graphics.Color.GetBlueComponent(pixel));
+
+                // Apply a simple threshold to convert to black or white
+                int newColor = gray < 128 ? 0 : 255; // Basic thresholding
+
+                // Set the new pixel color on the black-and-white bitmap
+                bwBitmap.SetPixel(x, y, newColor == 0 ? Android.Graphics.Color.Black : Android.Graphics.Color.White);
+            }
+        }
+
+        return bwBitmap;
+    }
+
+    public Bitmap DownloadAndConvertToBWBitmap(string imageUrl)
+    {
+        // Step 1: Download the image from the URL synchronously
+        using (HttpClient httpClient = new HttpClient())
+        {
+            // Download the image data as a byte array
+            byte[] imageData = httpClient.GetByteArrayAsync(imageUrl).Result;
+
+            // Step 2: Decode the byte array into a Bitmap
+            Bitmap originalBitmap = BitmapFactory.DecodeByteArray(imageData, 0, imageData.Length);
+
+            // Step 3: Convert the bitmap to a black-and-white format for printing
+            return ConvertToPrintableBitmap(originalBitmap);
+        }
+    }
 
     public bool PrintTable(Table table)
     {
