@@ -160,13 +160,10 @@ public class PrinterConnection : IPrinterConnection
 
             SunmiPrinterService.Service.PrintText("Hello Sunmi world!" + "\n", null);
             SunmiPrinterService.Service.PrintText("--------------------------------\n", new SimpleCallback());
-
             SunmiPrinterService.Service.PrintTextWithFont("Hello Sunmi world!", "fonts/OpenSans-Semibold.ttf", 12, null);
-
 
             //PrintBarcode(new Barcode("21705070507", 2, 6, 70, false));
             //PrintQRCode(new QRcode("Hello Sunmi world!"));
-
             //var table = new Table(new string[] { "Name1", "Value" }, new int[] { 20, 20 }, new AlignmentEnum[] { AlignmentEnum.LEFT, AlignmentEnum.RIGHT });
             //PrintTable(table);
             //table = new Table(new string[] { "Name2", "Value" }, new int[] { 20, 20 }, new AlignmentEnum[] { AlignmentEnum.LEFT, AlignmentEnum.RIGHT });
@@ -174,40 +171,46 @@ public class PrinterConnection : IPrinterConnection
             //table = new Table(new string[] { "Name3", "Value333" }, new int[] { 20, 20 }, new AlignmentEnum[] { AlignmentEnum.LEFT, AlignmentEnum.RIGHT });
             //PrintTable(table);
 
-
-
             var printerVersion = SunmiPrinterService.Service.GetPrinterVersion();
-            var test1 = SunmiPrinterService.Service.GetPrinterSerialNo();
-            var test2 = SunmiPrinterService.Service.GetServiceVersion();
-            var test3 = SunmiPrinterService.Service.GetFirmwareStatus();
 
-
-            // Retrieve the resource ID for the image
-            var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
-            if (resourceId == 0)
-            {
-                Console.WriteLine($"Image resource '{image.Resource}' not found.");
-                return false;
-            }
-            // Load the drawable and convert to Bitmap
-            using var drawable = context.GetDrawable(resourceId) as BitmapDrawable;
-            if (drawable == null || drawable.Bitmap == null)
-            {
-                Console.WriteLine("Failed to load drawable or bitmap is null.");
-                return false;
-            }
-            
-                //ConvertToPrintableBitmap(drawable.Bitmap);
+            //// Retrieve the resource ID for the image
+            //var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
+            //if (resourceId == 0)
+            //{
+            //    Console.WriteLine($"Image resource '{image.Resource}' not found.");
+            //    return false;
+            //}
+            //// Load the drawable and convert to Bitmap
+            //using var drawable = context.GetDrawable(resourceId) as BitmapDrawable;
+            //if (drawable == null || drawable.Bitmap == null)
+            //{
+            //    Console.WriteLine("Failed to load drawable or bitmap is null.");
+            //    return false;
+            //}            
 
             // Start buffered mode
             SunmiPrinterService.Service.EnterPrinterBuffer(true);
-            var scaledBitmap = DownloadAndConvertToBWBitmap(@"https://smartstore.com/media/6430/pagebuilder/Story-Home-Counter-git-400px-stroke-40.png?size=120");
+
+            string logoFileName = "logoReceipt.png";
+
+            // Try to load the bitmap from the local file
+            Bitmap bwBitmap = LoadBitmapFromLocalFile(logoFileName);
+            if (bwBitmap == null)
+            {
+                // If the file does not exist, download and convert the image
+                string imageUrl = @"https://smartstore.com/media/6430/pagebuilder/Story-Home-Counter-git-400px-stroke-40.png?size=120";
+                bwBitmap = DownloadAndConvertToBWBitmap(imageUrl);
+
+                // Save the bitmap to a local file for future use
+                SaveBitmapToLocalFile(bwBitmap, logoFileName);
+            }
 
 
-            // Use the SimpleCallback class as the ICallback implementation
-            //var bmp1 = CreateSmileyBitmap();
-            SunmiPrinterService.Service.PrintBitmap(scaledBitmap, new SimpleCallback());
-            SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 1, null);
+            //var scaledBitmap = DownloadAndConvertToBWBitmap(@"https://smartstore.com/media/6430/pagebuilder/Story-Home-Counter-git-400px-stroke-40.png?size=120");
+            //var scaledBitmap = DownloadAndConvertToBWBitmap(@"https://i.etsystatic.com/42181717/r/il/066591/5857662064/il_794xN.5857662064_c20n.jpg");
+
+            SunmiPrinterService.Service.PrintBitmap(bwBitmap, new SimpleCallback());
+            SunmiPrinterService.Service.PrintBitmapCustom(bwBitmap, 1, null);
             
             //SunmiPrinterService.Service.PrintBitmap(bmp1, new SimpleCallback());
             //SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 1, null);
@@ -218,27 +221,7 @@ public class PrinterConnection : IPrinterConnection
             ////SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
             ////SunmiPrinterService.Service.CommitPrinterBuffer();
 
-
             SunmiPrinterService.Service.ExitPrinterBuffer(true);
-
-            //// Retrieve the resource ID for the image
-            //var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
-            //if (resourceId == 0)
-            //{
-            //    Console.WriteLine($"Image resource '{image.Resource}' not found.");
-            //    return false;
-            //}
-
-            //// Load the drawable and convert to Bitmap
-            //using var drawable = context.GetDrawable(resourceId) as BitmapDrawable;
-            //if (drawable == null || drawable.Bitmap == null)
-            //{
-            //    Console.WriteLine("Failed to load drawable or bitmap is null.");
-            //    return false;
-            //}
-
-            //// Convert and scale the Bitmap to fit the printer's maximum width
-            //using var grayscaleBitmap = ConvertToGrayscaleAndScale(drawable.Bitmap, 384);
 
             //// Set alignment and print the Bitmap
             //SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
@@ -255,120 +238,6 @@ public class PrinterConnection : IPrinterConnection
             Console.WriteLine($"Exception during image printing: {ex.Message}");
             throw new PrintImageException();
         }
-    }
-
-
-    public bool PrintImage_(Image image)
-    {
-        if (!IsConnected()) throw new PrinterConnectionException();
-        try
-        {
-            var context = Application.Context;
-
-
-            var printerVersion = SunmiPrinterService.Service.GetPrinterVersion();
-            var test1 = SunmiPrinterService.Service.GetPrinterSerialNo();
-            var test2 = SunmiPrinterService.Service.GetServiceVersion();
-            var test3 = SunmiPrinterService.Service.GetFirmwareStatus();
-
-            //SunmiPrinterService.Service.SetAlignment((int)image.Alignment, null);
-            //SunmiPrinterService.Service.PrintText("Imagem\n", null);
-            SunmiPrinterService.Service.PrintText(printerVersion + "\n", null);
-            SunmiPrinterService.Service.PrintText("--------------------------------\n", new SimpleCallback());  
-
-            // Use the SimpleCallback class as the ICallback implementation
-            SunmiPrinterService.Service.PrintBitmap(CreateTestBitmap(), new SimpleCallback());
-
-            SunmiPrinterService.Service.PrintBitmapCustom(CreateTestBitmap(), 2, null);
-
-
-            // Retrieve the resource ID for the image
-            var resourceId = context.Resources.GetIdentifier(image.Resource, "drawable", context.PackageName);
-            if (resourceId == 0)
-            {
-                Console.WriteLine($"Image resource '{image.Resource}' not found.");
-                return false;
-            }
-
-            // Load the drawable and convert to Bitmap
-            using var drawable = context.GetDrawable(resourceId) as BitmapDrawable;
-            if (drawable == null || drawable.Bitmap == null)
-            {
-                Console.WriteLine("Failed to load drawable or bitmap is null.");
-                return false;
-            }
-
-            // Scale the Bitmap to fit the printer's maximum width
-            using var scaledBitmap = ConvertToGrayscaleAndScale(drawable.Bitmap, 384);
-
-            SunmiPrinterService.Service.PrintBitmapCustom(scaledBitmap, 2, null);
-
-
-
-
-
-
-
-            byte[] imageData = ConvertBitmapToEscPos(CreateTestBitmap());
-
-            // Send the raw data to the printer
-            SunmiPrinterService.Service.SendRAWData(imageData, new SimpleCallback());
-
-
-            //using (var drawable = Xamarin.Forms.Platform.Android.ResourceManager.GetDrawable(context, image.Resource))
-            //using (var bitmap = ((BitmapDrawable)drawable).Bitmap)
-            //{
-            //    SunmiPrinterService.Service.PrintBitmap(ScaleImage(bitmap), null);
-            //}
-            LineWrap();
-            if (image.CutPaper) SendRawData(CommandUtils.CutPaper());
-            return true;
-        }
-        catch (Exception _)
-        {
-            throw new PrintImageException();
-        }
-    }
-    private Bitmap ScaleBitmapToWidth(Bitmap original, int targetWidth)
-    {
-        int width = original.Width;
-        int height = original.Height;
-
-        if (width > targetWidth)
-        {
-            int scaledHeight = (int)(height * (float)targetWidth / width);
-            return Bitmap.CreateScaledBitmap(original, targetWidth, scaledHeight, true);
-        }
-        return original;
-    }
-
-    private Bitmap ConvertToGrayscaleAndScale(Bitmap originalImage, int targetWidth)
-    {
-        int width = originalImage.Width;
-        int height = originalImage.Height;
-
-        if (width > targetWidth)
-        {
-            int scaledHeight = (int)(height * (float)targetWidth / width);
-            originalImage = Bitmap.CreateScaledBitmap(originalImage, targetWidth, scaledHeight, true);
-        }
-
-        Bitmap grayscaleBitmap = Bitmap.CreateBitmap(originalImage.Width, originalImage.Height, Bitmap.Config.Argb8888);
-
-        for (int y = 0; y < originalImage.Height; y++)
-        {
-            for (int x = 0; x < originalImage.Width; x++)
-            {
-                int pixel = originalImage.GetPixel(x, y);
-                int gray = (int)(Android.Graphics.Color.GetRedComponent(pixel) * 0.3 +
-                                 Android.Graphics.Color.GetGreenComponent(pixel) * 0.59 +
-                                 Android.Graphics.Color.GetBlueComponent(pixel) * 0.11);
-                int alpha = Android.Graphics.Color.GetAlphaComponent(pixel);
-                grayscaleBitmap.SetPixel(x, y, Android.Graphics.Color.Argb(alpha, gray, gray, gray));
-            }
-        }
-
-        return grayscaleBitmap;
     }
 
     public class SimpleCallback : Java.Lang.Object, ICallback
@@ -416,142 +285,6 @@ public class PrinterConnection : IPrinterConnection
         //        Console.WriteLine("Failed to print image.");
         //    }
         //}
-    }
-
-    public byte[] ConvertBitmapToEscPos(Bitmap bitmap)
-    {
-        int width = bitmap.Width;
-        int height = bitmap.Height;
-
-        // ESC/POS command for starting raster mode
-        List<byte> bytes = new List<byte> { 0x1D, 0x76, 0x30, 0x00, (byte)(width / 8), 0x00, (byte)(height % 256), (byte)(height / 256) };
-
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x += 8)
-            {
-                byte byteData = 0;
-
-                for (int bit = 0; bit < 8; bit++)
-                {
-                    int pixelX = x + bit;
-                    if (pixelX < width)
-                    {
-                        int pixelColor = bitmap.GetPixel(pixelX, y);
-                        byte grayscale = (byte)((Android.Graphics.Color.GetRedComponent(pixelColor) * 0.3 +
-                                                 Android.Graphics.Color.GetGreenComponent(pixelColor) * 0.59 +
-                                                 Android.Graphics.Color.GetBlueComponent(pixelColor) * 0.11) > 128 ? 1 : 0);
-
-                        byteData |= (byte)(grayscale << (7 - bit));
-                    }
-                }
-                bytes.Add(byteData);
-            }
-        }
-
-        return bytes.ToArray();
-    }
-
-
-    public Bitmap CreateTestBitmap_()
-    {
-        // Set dimensions for the test bitmap
-        int width = 384; // Adjust width based on your printer's requirements
-        int height = 384; // Adjust height as needed for a square grid of tiles
-
-        // Create a blank bitmap with the specified width and height
-        Bitmap bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
-
-        // Set up a canvas to draw on the bitmap
-        Canvas canvas = new Canvas(bitmap);
-
-        // Define the number of tiles in both directions
-        int numberOfTiles = 16; // Number of tiles per row and column
-        int tileSize = width / numberOfTiles; // Size of each tile
-
-        // Paint for drawing
-        Android.Graphics.Paint paint = new Android.Graphics.Paint();
-
-        // Loop through each tile and draw black and white tiles alternately
-        for (int row = 0; row < numberOfTiles; row++)
-        {
-            for (int col = 0; col < numberOfTiles; col++)
-            {
-                // Set the color: black for even sum of row and col, white for odd
-                if ((row + col) % 2 == 0)
-                {
-                    paint.Color = Android.Graphics.Color.Black;
-                }
-                else
-                {
-                    paint.Color = Android.Graphics.Color.White;
-                }
-
-                // Draw the tile
-                float left = col * tileSize;
-                float top = row * tileSize;
-                float right = left + tileSize;
-                float bottom = top + tileSize;
-
-                canvas.DrawRect(left, top, right, bottom, paint);
-            }
-        }
-
-        return bitmap;
-    }
-
-    public Bitmap CreateTestBitmap()
-    {
-
-        // Set dimensions for the test bitmap
-        int width = 384; // Adjust width based on your printer's requirements
-        int height = 384; // Adjust height as needed for a square grid of tiles
-
-        // Create a blank bitmap with the specified width and height
-        Bitmap bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888);
-
-        // Set up a canvas to draw on the bitmap
-        Canvas canvas = new Canvas(bitmap);
-
-        // Define the number of tiles in both directions
-        int numberOfTiles = 16; // Number of tiles per row and column
-        int tileSize = width / numberOfTiles; // Size of each tile
-
-        // Paint for drawing
-        Android.Graphics.Paint paint = new Android.Graphics.Paint();
-
-        // Define the number of gray shades to use
-        int numberOfGrayShades = 4; // Adjust as needed for more/less gradient steps
-
-        // Loop through each tile and draw black, white, or gray tiles
-        for (int row = 0; row < numberOfTiles; row++)
-        {
-            for (int col = 0; col < numberOfTiles; col++)
-            {
-                // Calculate the color based on the row and column
-                if ((row + col) % 2 == 0)
-                {
-                    paint.Color = Android.Graphics.Color.Black; // Black tiles for even sum
-                }
-                else
-                {
-                    // Determine which shade of gray to use based on the row
-                    int grayIndex = (row / (numberOfTiles / numberOfGrayShades)) % numberOfGrayShades;
-                    int grayValue = (255 / (numberOfGrayShades - 1)) * grayIndex;
-                    paint.Color = Android.Graphics.Color.Rgb(grayValue, grayValue, grayValue);
-                }
-
-                // Draw the tile
-                float left = col * tileSize;
-                float top = row * tileSize;
-                float right = left + tileSize;
-                float bottom = top + tileSize;
-
-                canvas.DrawRect(left, top, right, bottom, paint);
-            }
-        }
-
-        return bitmap;
     }
 
     public Bitmap CreateSmileyBitmap()
@@ -603,52 +336,6 @@ public class PrinterConnection : IPrinterConnection
         canvas.DrawArc(smileRect, 20, 140, false, paint); // Adjusted angles for a clearer smile
 
         return smileyBitmap;
-    }
-
-    public Bitmap ConvertToBlackAndWhite(Bitmap inputBitmap)
-    {
-        // Set the target width for the thermal printer
-        int targetWidth = 384;
-        int originalWidth = inputBitmap.Width;
-        int originalHeight = inputBitmap.Height;
-
-        // Calculate the aspect ratio and the new height
-        float aspectRatio = (float)originalHeight / originalWidth;
-        int targetHeight = (int)(targetWidth * aspectRatio);
-
-        // Scale the input bitmap to the target width and height
-        Bitmap scaledBitmap = Bitmap.CreateScaledBitmap(inputBitmap, targetWidth, targetHeight, true);
-
-        // Create a new bitmap for the black-and-white image
-        Bitmap bwBitmap = Bitmap.CreateBitmap(targetWidth, targetHeight, Bitmap.Config.Argb8888);
-
-        // Iterate through each pixel and convert to black or white
-        for (int y = 0; y < targetHeight; y++)
-        {
-            for (int x = 0; x < targetWidth; x++)
-            {
-                // Get the pixel color from the scaled bitmap
-                int pixel = scaledBitmap.GetPixel(x, y);
-
-                // Convert the pixel to grayscale
-                int gray = (int)(0.3 * Android.Graphics.Color.GetRedComponent(pixel) +
-                                 0.59 * Android.Graphics.Color.GetGreenComponent(pixel) +
-                                 0.11 * Android.Graphics.Color.GetBlueComponent(pixel));
-
-                // Binarize the pixel based on a threshold value
-                int threshold = 128; // You can adjust this threshold value as needed
-                if (gray < threshold)
-                {
-                    bwBitmap.SetPixel(x, y, Android.Graphics.Color.Black);
-                }
-                else
-                {
-                    bwBitmap.SetPixel(x, y, Android.Graphics.Color.White);
-                }
-            }
-        }
-
-        return bwBitmap;
     }
 
     public Bitmap ConvertToPrintableBitmap(Bitmap inputBitmap)
@@ -729,6 +416,35 @@ public class PrinterConnection : IPrinterConnection
             throw new PrintTableException();
         }
     }
+
+    public void SaveBitmapToLocalFile(Bitmap bitmap, string fileName)
+    {
+        // Get the path to the app's local storage directory
+        string localPath = System.IO.Path.Combine(Android.App.Application.Context.FilesDir.Path, fileName);
+
+        using (FileStream fileStream = new FileStream(localPath, FileMode.Create))
+        {
+            // Compress and save the bitmap as a PNG file
+            bitmap.Compress(Bitmap.CompressFormat.Png, 100, fileStream);
+        }
+    }
+
+    public Bitmap LoadBitmapFromLocalFile(string fileName)
+    {
+        // Get the path to the app's local storage directory
+        string localPath = System.IO.Path.Combine(Android.App.Application.Context.FilesDir.Path, fileName);
+
+        // Check if the file exists
+        if (File.Exists(localPath))
+        {
+            // Load the bitmap from the file
+            return BitmapFactory.DecodeFile(localPath);
+        }
+
+        return null; // Return null if the file does not exist
+    }
+
+
     public bool PrintReceiptWithQR(Text text,QRcode qrCode)
     {
         this.PrintText(text);
